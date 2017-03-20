@@ -1,0 +1,266 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description"
+          content="Discover the top repositories on Github! Find out the top reositories rank by star, fork and languages like JavaScript, Java, CSS, GO, Swift, Ruby and Scala">
+    <meta name="author" content="">
+
+    <title>GitHub Rank - Top Java repositories sort by Stars</title>
+
+</head>
+
+<body>
+
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse"
+                    aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Github Ranking</a>
+        </div>
+
+        <div class="collapse navbar-collapse" id="navbar-collapse">
+            <ul class="nav navbar-nav">
+
+                <li class="active"><a href="#">Star</a></li>
+                <li><a href="fork">Fork</a></li>
+
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+<div class="container-fluid">
+
+    <div class="main">
+        <h1 class="page-header">Star Ranking</h1>
+
+        <ul class="nav nav-pills" id="language-nav">
+            <li role="presentation" class="active"><a href="/star?language=all">All</a></li>
+            <li role="presentation"><a href="/star?language=Java">Java</a></li>
+            <li role="presentation"><a href="/star?language=JavaScript">JavaScript</a></li>
+            <li role="presentation"><a href="/star?language=CSS">CSS</a></li>
+            <li role="presentation"><a href="/star?language=Ruby">Ruby</a></li>
+            <li role="presentation"><a href="/star?language=Python">Python</a></li>
+            <li role="presentation"><a href="/star?language=C">C</a></li>
+            <li role="presentation"><a href="/star?language=C++">C++</a></li>
+            <li role="presentation"><a href="/star?language=go">go</a></li>
+        </ul>
+
+        <div class="table-responsive">
+            <table class="table table-striped" id="main-table">
+                <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Owner</th>
+                    <th>Repository</th>
+                    <th>Language</th>
+                    <th>Stars</th>
+                    <th>Forks</th>
+                </tr>
+                </thead>
+                <tbody/>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+      integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+      crossorigin="anonymous">
+
+<!-- Custom styles for this template -->
+<link rel="stylesheet" href="../css/dashboard.css">
+
+<!--<script src="https://code.jquery.com/jquery-3.1.0.min.js"-->
+<!--integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s="-->
+<!--crossorigin="anonymous"></script>-->
+
+
+<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+<![endif]-->
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/themes/blue/pace-theme-loading-bar.min.css">
+
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+<!--Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+        integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
+
+<script>
+    var rankIndex = 0
+
+
+    loadDataIntoTable()
+
+
+    var recordPerPage = 100
+    var nextPageNumber = 1
+
+    function loadDataIntoTable() {
+        $.ajax({
+            url: "https://api.github.com/search/repositories",
+            data: {
+
+                q: "stars:>1 language:" + "Java",
+
+                sort: "stars",
+                order: 'desc',
+                type: 'Repositories',
+                page: nextPageNumber,
+                per_page: recordPerPage,
+            },
+            type: 'GET',
+            dataType: 'json'
+        }).done(function (data) {
+            console.log("client data")
+            console.log(data)
+            dataToRowArray(data, (nextPageNumber - 1) * recordPerPage + 1).forEach(function (element, index, array) {
+                $('#main-table tbody').append(element)
+            })
+            nextPageNumber++;
+        }).fail(function (xhr, ajaxOptions, thrownError) {
+            console.log(xhr.status);
+            console.log(thrownError);
+        }).always(function () {
+            freshTabs()
+        });
+    }
+
+    function freshTabs() {
+        var totalLanguage = 50
+        var languagesMap = {}
+
+        // Get lanaguage from current table
+        $('#main-table>tbody>tr>td:nth-child(4)').each(function(){ // Here 2 is the column number of which the data I want.
+            if (Object.keys(languagesMap).length <= totalLanguage) {
+                languagesMap[$(this).text().trim()] = true;
+            }
+        });
+
+        // Get from current tab
+        $('#language-nav>li').each(function(){ // Here 2 is the column number of which the data I want.
+            console.log(Object.keys(languagesMap).length)
+            if (Object.keys(languagesMap).length <= totalLanguage) {
+                languagesMap[$(this).text().trim()] = true;
+            }
+        });
+        delete languagesMap[""];
+
+        $('#language-nav li').remove()
+        var selectLanguage = "Java";
+        delete languagesMap[selectLanguage];
+        $('#language-nav').append('<li role="presentation" class="active"><a href="/star?language='+selectLanguage+'">' + selectLanguage + '</a></li>')
+        for (language in languagesMap) {
+            $('#language-nav').append('<li role="presentation" ><a href="/star?language='+language+'">' + language + '</a></li>')
+        }
+    }
+
+
+    function nullToEmpty(value) {
+        if (typeof value === "undefined" || value === null) {
+            return ''
+        } else {
+            return value
+        }
+    }
+
+    function dataToRowArray(data, startRank) {
+        var result = [];
+        for (var i = 0; i < data.items.length; i++) {
+            rankIndex++
+            var content = '\
+                    <tr> \
+                        <td> \
+                            ' + rankIndex + '\
+                        </td> \
+                        <td> \
+                            <img src= ' + data.items[i].owner.avatar_url + '&size=16 class="img" width="16" height="16"/> \
+                            <a href=' + data.items[i].owner.html_url + ' target="_blank"> \
+                                ' + data.items[i].owner.login + ' \
+                            </a> \
+                        </td> \
+                        <td> \
+                             <a href= ' + data.items[i].html_url + ' \
+                                data-toggle="tooltip" \
+                                title=" ' + data.items[i].description + '" \
+                                target="_blank"> \
+                                    ' + data.items[i].name + ' \
+                             </a> \
+                        </td> \
+                        <td> \
+                              <a class="language" href= ' + window.location.pathname + '?language=' + data.items[i].language + ' > \
+                                ' + nullToEmpty(data.items[i].language) + '\
+                              </a> \
+                        </td> \
+                        <td> \
+                            ' + data.items[i].stargazers_count + '\
+                        </td> \
+                        <td> \
+                            ' + data.items[i].forks + '\
+                        </td> \
+                    </tr> \
+                    ';
+            result.push(content)
+        }
+        return result
+    }
+
+    var lastTimeLoadData = Date.now();
+    $(document).ready(function () {
+        var win = $(window);
+        var doc = $(document);
+
+        // Each time the user scrolls
+        win.scroll(function () {
+            console.log("lastTimeLoadData " + lastTimeLoadData)
+            console.log("Date.now() " + Date.now())
+            console.log("Date.now() - lastTimeLoadData " + (Date.now() - lastTimeLoadData))
+            if (Date.now() - lastTimeLoadData > 1000) {
+                console.log("******************************************")
+                console.log("win.scrollTop() " + win.scrollTop())
+                console.log("doc.height() - win.height() " + (doc.height() - win.height()))
+                console.log("doc.height() " + doc.height())
+                console.log("win.height() " + win.height())
+                // Vertical end reached?
+                if ((doc.height() - win.height()) == win.scrollTop()) {
+                    // New row
+                    console.log("win.scroll add new row")
+                    loadDataIntoTable();
+                    lastTimeLoadData = Date.now()
+                }
+            }
+        })
+    })
+
+</script>
+
+</body>
+</html>

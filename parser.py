@@ -1,5 +1,8 @@
 #-*- coding: utf-8 -*-
 import fnmatch
+import requests
+import nltk
+
 import os
 import re
 # import pandas as pd
@@ -183,7 +186,8 @@ def extractIntent(line):
 
 def parseLine(line):
     ## check intent
-    intent = extractIntent(line)
+    # don't need intent
+    # intent = extractIntent(line)
 
     ## extract variables
     vals = extractVariable(line)
@@ -192,11 +196,14 @@ def parseLine(line):
 
     ret = []
     for val in vals:
+
         ## check name validation
         if False==variableValidation(val[0]):
             continue
+        ## add char_len vlaue
+        val.append(len(val[0]))
         ## add intent value
-        val.append(intent)
+        # val.append(intent)
         #add tokenizer
         token_variable_list = tokenizer(val[0])
         token_variable_list_count = len(token_variable_list)
@@ -205,7 +212,6 @@ def parseLine(line):
 
         ret.append(val)
     return ret
-
 
 def charType(ch):
     if ch=='_':
@@ -306,12 +312,28 @@ def parseSourceDir(filenames):
         pared_variables.extend(parseSourceCode(path))
     return pared_variables
 
+
+def search(dirname):
+    filenames = os.listdir(dirname)
+    for filename in filenames:
+        full_filename = os.path.join(dirname, filename)
+        if os.path.isdir(full_filename):
+            search(full_filename)
+        else:
+            ext = os.path.splitext(full_filename)[-1]
+            if ext == '.java':
+                print(full_filename)
+
 def main():
 
-    # path = "./resource/elasticsearch"
-    # pattern = "*.java"
+    path = "/Users/sunkyung/git/naming/resource"
+    pattern = "*.java"
     # matches = findFiles(path, pattern)
     # print matches
+
+    dirname = "/Users/sunkyung/git/naming/resource"
+    # search(dirname)
+
     # print parseSourceDir(matches)
 
     # print(tokenizer('parseDBMXMLFromIPAddress'))
@@ -322,8 +344,24 @@ def main():
     #     print('^'+word)
     #     print(''.join(['0']+[ str(chLevel(ch)) for ch in word]))
 
-    testFile = "./resource/RxJava/src/main/java/rx/Emitter.java"
-    print parseSourceCode(testFile)
+    # testPath = "/Users/sunkyung/git/naming/resource/spring-framework/spring-core/src/main/java/org/springframework/core/ResolvableType.java"
+    # testFile = "./resource/RxJava/src/main/java/rx/Emitter.java"
+    # print parseSourceCode(testPath)
+
+
+    # ------request
+    URL = 'https://api.github.com/search/repositories'
+    data = {
+        "q":"stars:>1 language:Java",
+        "sort":"stars",
+        "order":"desc",
+        "type":"repositories",
+        "page":1,
+        "per_page":10
+    }
+    response = requests.get(URL, data)
+    response.status_code
+    print response.text
 
 if __name__ == '__main__':
     main()
