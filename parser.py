@@ -8,7 +8,9 @@ import re
 # import pandas as pd
 # # %matplotlib inline
 
-def readSource(path):
+# java_file = []
+
+def read_source(path):
     try :
         with open(path) as f:
             content = f.read()
@@ -34,7 +36,7 @@ def removeComments(source):
     return output
 
 
-def cleaningSource(source):
+def cleaning_source(source):
     ## remove ccomments
     source = removeComments(source)
 
@@ -46,7 +48,7 @@ def cleaningSource(source):
 
     return source_lines
 
-def parseSourceLines(lines):
+def parse_source_lines(lines):
     variable_names = []
     variable_set = set()
     for line in lines:
@@ -206,12 +208,20 @@ def parseLine(line):
         # val.append(intent)
         #add tokenizer
         token_variable_list = tokenizer(val[0])
+        #소문자 변환
+        token_variable_list = lower(token_variable_list)
         token_variable_list_count = len(token_variable_list)
         val.append(token_variable_list);
         val.append(token_variable_list_count);
 
         ret.append(val)
     return ret
+
+def lower(list):
+    result = []
+    for word in list:
+        result.append(word.lower())
+    return result
 
 def charType(ch):
     if ch=='_':
@@ -287,81 +297,76 @@ def tokenizer(sentance):
         last_pos=pos
     return words
 
-def parseSourceCode(src_path):
+def parse_source_code(src_path):
+
     #소스파일 주석제거
-    source = readSource(src_path)
+    source = read_source(src_path)
     #파일을 한줄씩 리스트 형태
-    source = cleaningSource(source)
+    source = cleaning_source(source)
     #본격적으로 parsing
-    parsed = parseSourceLines(source)
+    parsed = parse_source_lines(source)
 
     return parsed
 
-def findFiles(path, pattern):
-    matches = []
-    for root, dirnames, filenames in os.walk(path):
-
-        for filename in fnmatch.filter(filenames, pattern):
-            matches.append(os.path.join(root, filename))
-    return matches
-
-def parseSourceDir(filenames):
-    pared_variables = []
-
-    for path in filenames:
-        pared_variables.extend(parseSourceCode(path))
-    return pared_variables
-
-
-def search(dirname):
+def parse_source_dir(dirname, java_file):
     filenames = os.listdir(dirname)
     for filename in filenames:
         full_filename = os.path.join(dirname, filename)
         if os.path.isdir(full_filename):
-            search(full_filename)
+            parse_source_dir(full_filename, java_file)
         else:
             ext = os.path.splitext(full_filename)[-1]
             if ext == '.java':
-                print(full_filename)
+                java_file.append(full_filename)
+
+
+def parse_project_dir(resource_path):
+
+    project_names = os.listdir(resource_path)
+
+    return project_names
+
+def find_java_file(resource_path, project_name):
+
+    print "parsing : %s ..." % (project_name)
+    java_files = []
+    project_path = os.path.join(resource_path, project_name)
+    parse_source_dir(project_path, java_files)
+    print "parsing completed"
+    return java_files
+
+def file_write(data_path, project_name, naming_data_list):
+
+    f_path = "%s/%s.csv" % (data_path, project_name)
+    f = open(f_path, "a")
+    for namingDataSet in naming_data_list:
+        for val in namingDataSet:
+            f.write("%s," % val)
+        f.write(project_name+"\n")
+    f.close()
+
+def parse_naming():
+    path = os.path.dirname(os.path.realpath(__file__))
+    resource_path = os.path.join(path, 'resource')
+    data_path = os.path.join(path, 'data')
+
+    project_names = parse_project_dir(resource_path)
+    print "project count : %d " % (len(project_names))
+    for project_name in project_names:
+        if not project_name.startswith('.'):
+            java_file_list = find_java_file(resource_path, project_name)
+            for file_path in java_file_list:
+                naming_data_list = parse_source_code(file_path)
+                file_write(data_path, project_name, naming_data_list)
+            print "file writing completed %s,  file count = %d" % (project_name, len(java_file_list))
+
 
 def main():
 
-    path = "/Users/sunkyung/git/naming/resource"
-    pattern = "*.java"
-    # matches = findFiles(path, pattern)
-    # print matches
-
-    dirname = "/Users/sunkyung/git/naming/resource"
-    # search(dirname)
-
-    # print parseSourceDir(matches)
-
-    # print(tokenizer('parseDBMXMLFromIPAddress'))
-    # testSentance = ['test100', 'tokenStats', 'ActiveMQQueueMarshaller', 'parseDBMXMLFromIPAddress', 'TestMapFile', 'TEST_NUMVER_AA', 'my_number']
-    # for word in testSentance:
-    #     print(tokenizer(word))
-    # for word in testSentance:
-    #     print('^'+word)
-    #     print(''.join(['0']+[ str(chLevel(ch)) for ch in word]))
-
-    # testPath = "/Users/sunkyung/git/naming/resource/spring-framework/spring-core/src/main/java/org/springframework/core/ResolvableType.java"
-    # testFile = "./resource/RxJava/src/main/java/rx/Emitter.java"
-    # print parseSourceCode(testPath)
+    print "start"
+    parse_naming()
 
 
-    # ------request
-    URL = 'https://api.github.com/search/repositories'
-    data = {
-        "q":"stars:>1 language:Java",
-        "sort":"stars",
-        "order":"desc",
-        "type":"repositories",
-        "page":1,
-        "per_page":10
-    }
-    response = requests.get(URL, data)
-    response.status_code
-    print response.text
 
 if __name__ == '__main__':
     main()
